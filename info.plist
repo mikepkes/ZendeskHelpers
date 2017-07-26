@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.kessler.ZendeskHelpers</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>7071FF93-BADF-4AD2-9FBF-9BA062EC4931</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>43E5E2E9-EF30-4DD8-91F9-E2EDF42F4FD2</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>Kessler</string>
+	<key>description</key>
+	<string></string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>ZendeskHelpers</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>img</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string></string>
+				<key>script</key>
+				<string>#!/usr/bin/python
+# encoding: utf-8
+
+import os
+import string
+import sys
+import workflow
+import tempfile
+import subprocess
+import urlparse
+from workflow.background import is_running, run_in_background
+
+
+def getAppleScript(browser="Google Chrome"):
+    template = """
+        on run argv
+            tell application "%s"
+            set result to execute front window's active tab javascript "
+                attachments = this.document.getElementsByClassName(\\"attachment\\");
+                var thisPageAttachments = [];
+                for (var i=0; i &lt; attachments.length; i++){
+                    thisPageAttachments.push(attachments[i].href);
+                }
+                thisPageAttachments"
+            end tell
+            return result
+        end run
+    """
+    
+    return template % (browser)
+
+def main(wf):
+    
+    log = wf.logger
+    
+    applescript = tempfile.NamedTemporaryFile(suffix=".applescript", delete=True)
+    applescript.write(getAppleScript())
+    applescript.flush()
+    proc = subprocess.Popen(['/usr/bin/osascript', applescript.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (out, err) = proc.communicate()
+
+    attachments = out.split(", ")
+
+    for attachment in attachments:
+        qs = urlparse.urlparse(attachment).query
+        (qsKey, qsValue) = qs.split('=')
+        if qsKey == 'name':
+            name = qsValue
+        else:
+            name = attachment
+        wf.add_item(
+            title=name,
+            subtitle=attachment,
+            arg=attachment,
+            valid=True
+        )
+    wf.send_feedback()
+
+
+if __name__ == u"__main__":
+    wf = workflow.Workflow(
+    #        update_settings={
+    #            'github_slug': 'mikepkes/ZendeskHelpers',
+    #            'frequency': 1
+    #            }
+    )
+    wf.run(main)</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>zd_filter.py</string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string></string>
+				<key>type</key>
+				<integer>8</integer>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>7071FF93-BADF-4AD2-9FBF-9BA062EC4931</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<true/>
+				<key>clipboardtext</key>
+				<string>{query}</string>
+				<key>transient</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>43E5E2E9-EF30-4DD8-91F9-E2EDF42F4FD2</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string></string>
+	<key>uidata</key>
+	<dict>
+		<key>43E5E2E9-EF30-4DD8-91F9-E2EDF42F4FD2</key>
+		<dict>
+			<key>xpos</key>
+			<integer>380</integer>
+			<key>ypos</key>
+			<integer>90</integer>
+		</dict>
+		<key>7071FF93-BADF-4AD2-9FBF-9BA062EC4931</key>
+		<dict>
+			<key>xpos</key>
+			<integer>130</integer>
+			<key>ypos</key>
+			<integer>70</integer>
+		</dict>
+	</dict>
+	<key>webaddress</key>
+	<string></string>
+</dict>
+</plist>
